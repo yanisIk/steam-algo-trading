@@ -1,3 +1,8 @@
-//import marketClient service
+const marketClient = require("./marketClient");
 
-getAllItemsOn
+/**
+ * Fetches the stats of all items (market_price, lowest_price)
+ */
+fetchAllItemStats = () => {
+    
+}

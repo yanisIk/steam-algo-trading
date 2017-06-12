@@ -1,16 +1,33 @@
-{
-    market_hash_name: String,
-    wear_value: Number,
-    from_market_name: String,
-    to_market_name: String,
-    from_market_price: Number,
-    status: Number, //(on buy market: 0 | bought: 1 | in inventory: 2 | pending listing: 3 | on sell market: 4 | sold on market: 5)
-    is_in_use: Boolean, //Indicates if item is being processed
-    error: String, //When an error happens during the process
-    bought_at: Date,
-    bought_for: Number,
-    sold_at: Date,
-    sold_for: Number,
-    created_at: Date,
-    updated_at: Date
-}
+'use strict';
+
+const mongoose = require('mongoose');
+const Schema = mongoose.Schema;
+
+// Use native promises.
+mongoose.Promise = global.Promise;
+
+// Define the Ride schema.
+const ArbitrageOpportunitySchema = new Schema({
+  marketHashName: { type: String, required: true },
+  wearValue: { type: Number, required: true },
+  fromMarketId: { type: String, required: true },
+  toMarketId: { type: String, required: true },
+  fromMarketPrice: { type: Number, required: true },
+  toMarketPrice: { type: Number, required: true },
+  status: { type: Number, required: true },
+  isInUse: { type: Boolean, required: true },
+  error: { type: String },
+  boughtAt: { type: Date },
+  boughtFor: { type: Number },
+  soldAt: { type: Date },
+  soldFor: { type: Number },
+});
+
+// Return the ride amount for the pilot after collecting 20% platform fees.
+ArbitrageOpportunitySchema.methods.amountForPilot = function() {
+  return parseInt(this.amount * 0.8);
+};
+
+const ArbitrageOpportunity = mongoose.model('ArbitrageOpportunity', ArbitrageOpportunity);
+
+module.exports = ArbitrageOpportunity;
