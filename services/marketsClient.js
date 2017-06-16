@@ -1,5 +1,16 @@
-//Import api libraries
-//Init api libraries
+const bluebird = require('bluebird');
+
+const Bitskins = require('bitskins');
+const bitskinsApi = new Bitskins.API(apiKey, bitskinsSecret);
+//const bitskinsSockets = new BitSkins.WebSocket();
+
+const OPSkinsAPI = require('@opskins/api');
+const opskinsApiCallback = new OPSkinsAPI('yourapikey');
+const opskinsApi = bluebird.promisifyAll(opskinsApiCallback);
+const ErrorCodes = OPSkinsAPI.ErrorCode;
+
+
+const config = require('./../config/config');
 
 ////////////////// OPSKINS //////////////////
 
@@ -19,8 +30,9 @@
         },
     },
  */
-exports.getAllOpskinsAvgPrices = (steamAppId = 730) => {
-    return new Promise((resolve, reject) => {
+exports.getAllOpskinsAvgPrices = (steamAppId = config.APP_IDS.CSGO) => {
+    return opskinsApi.getPriceListAsync(steamAppId);
+    /*return new Promise((resolve, reject) => {
         let prices = {
             "AK-47 | Black Laminate (Factory New)": {
                 "2016-08-10": {
@@ -40,7 +52,7 @@ exports.getAllOpskinsAvgPrices = (steamAppId = 730) => {
             },
         };
         resolve(prices);
-    });
+    });*/
 }
 
 /**
@@ -53,8 +65,9 @@ exports.getAllOpskinsAvgPrices = (steamAppId = 730) => {
         "quantity": 13 //all quantity in sale
     },
  */
-exports.getAllOpskinsLowestPrices = (steamAppId = 730) => {
-    return new Promise((resolve, reject) => {
+exports.getAllOpskinsLowestPrices = (steamAppId = config.APP_IDS.CSGO) => {
+    return opskinsApi.getLowestPricesAsync(steamAppId);
+    /*return new Promise((resolve, reject) => {
         let prices = {
             "AK-47 | Black Laminate (Battle-Scarred)": {
                 "price": 590,
@@ -66,7 +79,7 @@ exports.getAllOpskinsLowestPrices = (steamAppId = 730) => {
             },
         };
         resolve(prices);
-    });
+    });*/
 }
 
 /**
@@ -80,8 +93,9 @@ exports.getAllOpskinsLowestPrices = (steamAppId = 730) => {
         "opskins_lowest_price": 570
     },
  */
-exports.getOpskinsSuggestedPrices = (market_hash_names, steamAppId = 730) => {
-    return new Promise((resolve, reject) => {
+exports.getOpskinsSuggestedPrices = (market_hash_names, steamAppId = config.APP_IDS.CSGO) => {
+    return opskinsApi.getSuggestedPricesAsync(steamAppId, market_hash_names)
+    /*return new Promise((resolve, reject) => {
         let prices = {
             "AK-47 | Black Laminate (Battle-Scarred)": {
                 "opskins_price": 590,
@@ -90,7 +104,7 @@ exports.getOpskinsSuggestedPrices = (market_hash_names, steamAppId = 730) => {
             },
         };
         resolve(prices);
-    });
+    });*/
 }
 
 /**
@@ -101,8 +115,9 @@ exports.getOpskinsSuggestedPrices = (market_hash_names, steamAppId = 730) => {
  * and are not currently limited to Buyers Club members. 
  * This endpoint always returns 100 listings sorted from lowest to highest price.
  */
-exports.getOpskinsSales = (market_hash_names,  min = 5, max = 3000, steamAppId = 730) => {
-    return new Promise((resolve, reject) => {
+exports.getOpskinsSales = (market_hash_names,  min = 5, max = 3000, steamAppId = config.APP_IDS.CSGO) => {
+    return opskinsApi.getSalesAsync({app: steamAppId, search_items: market_hash_names, min: min, max: max})
+    /*return new Promise((resolve, reject) => {
         let items = [{
             id: "test",
             market_name: "test",
@@ -113,7 +128,7 @@ exports.getOpskinsSales = (market_hash_names,  min = 5, max = 3000, steamAppId =
             img: "test"
         }]
         resolve(items);
-    });
+    });*/
 }
 
 
@@ -123,7 +138,8 @@ exports.getOpskinsSales = (market_hash_names,  min = 5, max = 3000, steamAppId =
  * Retrieves the entire price database used at BitSkins.
  */
 exports.getAllBitskinsItemPrices = () => {
-    return new Promise((resolve, reject) => {
+    return bitskinsApi.getAllItemPrices();
+    /*return new Promise((resolve, reject) => {
         let itemPrices = [{
             "appid": "730",
             "market_hash_name": "AK-47 | Aquamarine Revenge (Battle-Scarred)",
@@ -133,7 +149,7 @@ exports.getAllBitskinsItemPrices = () => {
             "created_at": 1494507537
         }];
         resolve(itemPrices);
-    });
+    });*/
 }
 
 /**
@@ -141,7 +157,8 @@ exports.getAllBitskinsItemPrices = () => {
  * This data is only for items currently on sale. Please make sure to URI encode your items' names.
  */
 exports.getBitskinsMarketDataByItems = (market_hash_names) => {
-    return new Promise((resolve, reject) => {
+    return bitskinsApi.getMarketData(market_hash_names);
+    /*return new Promise((resolve, reject) => {
         let items = [{
             "market_hash_name": "AK-47 | Aquamarine Revenge (Battle-Scarred)",
             "total_items": 26,
@@ -155,7 +172,7 @@ exports.getBitskinsMarketDataByItems = (market_hash_names) => {
             "updated_at": 1494510269
         }];
         resolve(items);
-    });
+    });*/
 }
 
 /**
@@ -165,7 +182,8 @@ exports.getBitskinsMarketDataByItems = (market_hash_names) => {
  * This method allows you to search the inventory just as the search function on the website allows you to search inventory.
  */
 exports.getBitskinsItemsOnSale = (market_hash_name = "", page = 1, per_page = 480) => {
-    return new Promise((resolve, reject) => {
+    return bitskinsApi.getInventoryOnSale({page: page, market_hash_name: market_hash_name, per_page: per_page});
+    /*return new Promise((resolve, reject) => {
         let items = [{
             "item_id": "10181800414",
             "class_id": "1012004440",
@@ -178,7 +196,7 @@ exports.getBitskinsItemsOnSale = (market_hash_name = "", page = 1, per_page = 48
             "is_featured": true,
         }];
         resolve(items);
-    });
+    });*/
 }
 
 /**
@@ -186,7 +204,8 @@ exports.getBitskinsItemsOnSale = (market_hash_name = "", page = 1, per_page = 48
  * These are the recent sales for the given item at BitSkins, in descending order.
  */
 exports.getBitskinsRecentSalesInfo = (market_hash_name, page = 1) => {
-    return new Promise((resolve, reject) => {
+    return bitskinsApi.getRecentSaleInfo(market_hash_name, page);
+    /*return new Promise((resolve, reject) => {
         let items = [{
             "market_hash_name": "AWP | Hyper Beast (Minimal Wear)",
             "price": "32.6500",
@@ -194,7 +213,7 @@ exports.getBitskinsRecentSalesInfo = (market_hash_name, page = 1) => {
             "sold_at": 1494613311
         }];
         resolve(items);
-    });
+    });*/
 }
 
 exports.getAllBitskinsBuyOrders = () => {
