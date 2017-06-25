@@ -9,6 +9,7 @@ mongoose.Promise = global.Promise;
 // Define the Ride schema.
 const ArbitrageOpportunitySchema = new Schema({
   marketHashName: { type: String, required: true },
+  itemMarketId: { type: String, required: true },
   wearValue: { type: Number, required: true },
   fromMarketId: { type: String, required: true },
   toMarketId: { type: String, required: true },

@@ -92,22 +92,51 @@ module.exports = function(agenda) {
           
           if (opskinsPrice < bitskinsAvgPrice) {
             //TODO
-            //double check with: if sold enough on bitskins
+            //double check with: if sold enough on opskins ( > 10 last week )
               //save ArbitrageOpportunity {from: opskins, to: bitskins} to db then to array
           }
 
           if (bitskinsPrice < opskinsAvgPrice) {
             //TODO
-            //double check with: if sold enough on opskins
+            //double check with: if sold enough on bitskins ( > 10 last week )
               //save ArbitrageOpportunity {from: bitskins, to: opskins} to db then to array
           }
         }, (err) => {
-          if (err) return reject();
+          if (err) return reject(err);
           //When done, callback with array 
-          done(null, arbitrageOpportunities);
+          resolve(arbitrageOpportunities);
         })
+      });
+    })
+    .then((arbitrageOpportunities) => {
+        return new Promise((resolve, reject) => {
+          async.eachLimit(arbitrageOpportunities, 5, (arbitrageOpportunity, cb) => {
+            //TODO
+            let arbitrageOpportunityModel = {
+              marketHashName: arbitrageOpportunity.market_hash_name,
+              itemMarketId: arbitrageOpportunity.item_id,
+              wearValue: arbitrageOpportunity.wear_value,
+              // fromMarketId: { type: String, required: true },
+              // toMarketId: { type: String, required: true },
+              // fromMarketPrice: { type: Number, required: true },
+              // toMarketPrice: { type: Number, required: true },
+              // status: { type: Number, required: true },
+              // isInUse: { type: Boolean, required: true },
+              // error: { type: String },
+              // boughtAt: { type: Date },
+              // boughtFor: { type: Number },
+              // soldAt: { type: Date },
+              // soldFor: { type: Number },
+            }
+            //save to db
+          }, (err) => {
+            if (err) return reject(err);
+            resolve(filteredAvgPrices);
+          });
         });
-    });
+    })
+    .then((filteredAvgPrices) => done(null, filteredAvgPrices))
+    .catch(err => done(err));
   });
 
   
