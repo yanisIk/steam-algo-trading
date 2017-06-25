@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@opskins/api": "^1.4.1",
+    "async": "^2.4.1",
     "bcrypt": "^1.0.2",
     "bitskins": "^1.0.0",
     "bluebird": "^3.5.0",
@@ -26,6 +27,7 @@
     "debug": "^2.6.8",
     "dotenv": "^4.0.0",
     "express": "^4.15.3",
+    "lodash": "^4.17.4",
     "moment": "^2.18.1",
     "mongoose": "^4.10.2",
     "morgan": "^1.8.2",
