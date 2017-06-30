@@ -14,7 +14,7 @@ const ArbitrageOpportunitySchema = new Schema({
   price: { type: Number, required: true },
   fromMarketName: { type: String, required: true },
   toMarketName: { type: String, required: true },
-  fromMarketPrice: { type: Number, required: true },
+  fromMarkeAvgtPrice: { type: Number, required: true },
   toMarketAvgPrice: { type: Number, required: true },
   status: { type: Number, required: true },
   isInUse: { type: Boolean, required: true },

@@ -74,17 +74,16 @@ module.exports = function(agenda) {
     })
     .then((itemsAndStatsMaps) => {
       return new Promise((resolve, reject) => {
+        
         let arbitrageOpportunities = [];
-        let unique_market_hash_names = itemsAndStatsMaps.opskinsItems.keys();
+
         //for each market_hash_name
-        async.eachLimit(unique_market_hash_names, 1, (name, cb) => {
+        async.eachLimit(market_hash_names, 1, (name, cb) => {
           //check if opskins price < bitskins avg price
-          let opskinsPrice = itemsAndStatsMaps.opskinsItemsMap.get(name).price;
+          let opskinsPrice = itemsAndStatsMaps.opskinsItemsMap.get(name).amount;
           let bitskinsPrice = itemsAndStatsMaps.bitskinsItemsMap.get(name).price;
           let opskinsAvgPrice = itemsAndStatsMaps.opskinsAvgPricesMap.get(name)[0].avgPrice;
           let bitskinsAvgPrice = itemsAndStatsMaps.bitskinsAvgPricesMap.get(name)[0].avgPrice;
-          
-          let arbitrageOpportunitiesInsertPromises = [];
 
           if (opskinsPrice < bitskinsAvgPrice) {
             //TODO
@@ -92,8 +91,8 @@ module.exports = function(agenda) {
               //save ArbitrageOpportunity {from: opskins, to: bitskins} to db then to array
               let arbitrageOpportunity = {
                 marketHashName: name,
-                itemMarketId: itemsAndStatsMaps.opskinsItemsMap.get(name).item_id,
-                wearValue: -1,
+                itemMarketId: itemsAndStatsMaps.opskinsItemsMap.get(name).id,
+                wearValue: itemsAndStatsMaps.opskinsItemsMap.get(name).wear,
                 price: opskinsPrice,
                 fromMarketName: 'opskins',
                 toMarketName: 'bitskins',
@@ -103,7 +102,7 @@ module.exports = function(agenda) {
                 status: 0,
                 isInUse: false
               };
-              arbitrageOpportunitiesInsert
+              arbitrageOpportunities
               .push(arbitrageOpportunity);
           }
 
