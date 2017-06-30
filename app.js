@@ -3,9 +3,7 @@
 require('dotenv').config();
 
 const config = require('./config');
-const stripe = require('stripe')(config.stripe.secretKey);
 const express = require('express');
-const session = require('cookie-session');
 const passport = require('passport');
 const path = require('path');
 const logger = require('morgan');

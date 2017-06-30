@@ -2,16 +2,20 @@
 const _ = require('lodash');
 const async = require('async');
 const jobNames = require('../jobs.json');
-const ItemStat = require('../models/ItemStat.js');
-const marketsClient = require('../services/marketsClient.js');
+const market_hash_names = require('/config/market_hash_names.json');
+const ArbitrageOpportunity = require('../models/ArbitrageOpportunity');
+const AvgMarketPrice = require('../models/AvgMarketPrice');
+const marketsClient = require('../services/marketsClient');
 
 
 module.exports = function(agenda) {
+
   agenda.define(jobNames.ArbitrageFinder, function(job, done) {
+    
     //get objects on sale from opskins
-    let opskinsItemsPromise = marketsClient.getOpskinsSales();
+    let opskinsItemsPromise = marketsClient.getOpskinsSales(market_hash_names);
     //get objetcs on sale from bitkins
-    let bitskinsItemsPromise = marketsClient.getBitskinsItemsOnSale();
+    let bitskinsItemsPromise = marketsClient.getBitskinsItemsOnSale(market_hash_names);
     
     Promise.all([opskinsItemsPromise, bitskinsItemsPromise])
     //create a map of stats for each items from each exchange
@@ -23,8 +27,8 @@ module.exports = function(agenda) {
         let opskinsItemsMap = new Map();
         
         opskinsItems.forEach(item => {
-          let actualItem = opskinsItemsMap.get(item.market_hash_name);
-          if (!actualItem) opskinsItemsMap.set(item.market_hash_name, item);
+          let actualItem = opskinsItemsMap.get(item.market_name);
+          if (!actualItem) opskinsItemsMap.set(item.market_name, item);
           else {
             if (item.price < actualItem.price) {
               opskinsItemsMap.set(item.market_hash_name, item);
@@ -41,29 +45,19 @@ module.exports = function(agenda) {
             }
           }
         });
-
-        //Keep only common items
-        bitskinsItemsMap.keys().forEach(key => {
-          if (!opskinsItemsMap.has(key)) bitskinsItemsMap.delete(key);
-        });
-        opskinsItemsMap.keys().forEach(key => {
-          if (!bitskinsItemsMap.has(key)) opskinsItemsMap.delete(key);
-        });
-
-        const unique_market_hash_names = bitskinsItems.keys();
         //////ENDS 1)
 
 
         //////2) Get stats for each item on each exchange;
-        let opskinsStatsMap = new Map();
-        let bitskinsStatsMap = new Map();
+        let opskinsAvgPricesMap = new Map();
+        let bitskinAvgPricesMap = new Map();
         async.forEachLimit(unique_market_hash_names, 1, (name, cb) => {
-          let opskinsStatsPromise; //TODO
-          let bitskinsStatsPromise; //TODO
-          Promise.all([opskinsStatsPromise, bitskinsStatsPromise])
+          let opskinsAvgPricesPromise = AvgMarketPrice.findOne({marketHashName: name, marketName: 'opskins'});
+          let bitskinsAvgPricesPromise = AvgMarketPrice.findOne({marketHashName: name, marketName: 'bitskins'});
+          Promise.all([opskinsAvgPricesPromise, bitskinsAvgPricesPromise])
           .then((...opskinsStats, bitskinsStats) => {
-            opskinsStatsMap.set(name, opskinsStats);
-            bitskinsStatsMap.set(name, bitskinsStats);
+            opskinsAvgPricesMap.set(name, opskinsStats);
+            bitskinAvgPricesMap.set(name, bitskinsStats);
             cb();
           })
           .catch(err => cb(err));
@@ -72,8 +66,8 @@ module.exports = function(agenda) {
           resolve({
             opskinsItemsMap: opskinsItemsMap, 
             bitskinsItemsMap: bitskinsItemsMap,
-            opskinsStatsMap: opskinsStatsMap,
-            bitskinsStatsMap: bitskinsStatsMap
+            opskinsAvgPricesMap: opskinsAvgPricesMap,
+            bitskinAvgPricesMap: bitskinAvgPricesMap
           });
         });
       });
@@ -87,20 +81,56 @@ module.exports = function(agenda) {
           //check if opskins price < bitskins avg price
           let opskinsPrice = itemsAndStatsMaps.opskinsItemsMap.get(name).price;
           let bitskinsPrice = itemsAndStatsMaps.bitskinsItemsMap.get(name).price;
-          let opskinsAvgPrice = itemsAndStatsMaps.opskinsStatsMap.get(name).avgPrice;
-          let bitskinsAvgPrice = itemsAndStatsMaps.bitskinsStatsMap.get(name).avgPrice;
+          let opskinsAvgPrice = itemsAndStatsMaps.opskinsAvgPricesMap.get(name)[0].avgPrice;
+          let bitskinsAvgPrice = itemsAndStatsMaps.bitskinsAvgPricesMap.get(name)[0].avgPrice;
           
+          let arbitrageOpportunitiesInsertPromises = [];
+
           if (opskinsPrice < bitskinsAvgPrice) {
             //TODO
             //double check with: if sold enough on opskins ( > 10 last week )
               //save ArbitrageOpportunity {from: opskins, to: bitskins} to db then to array
+              let arbitrageOpportunity = {
+                marketHashName: name,
+                itemMarketId: itemsAndStatsMaps.opskinsItemsMap.get(name).item_id,
+                wearValue: -1,
+                price: opskinsPrice,
+                fromMarketName: 'opskins',
+                toMarketName: 'bitskins',
+                fromMarketAvgPrice: opskinsAvgPrice,
+                toMarketAvgPrice: bitskinsAvgPrice,
+                potentialPlusValue: bitskinsAvgPrice - opskinsPrice,
+                status: 0,
+                isInUse: false
+              };
+              arbitrageOpportunitiesInsert
+              .push(arbitrageOpportunity);
           }
 
           if (bitskinsPrice < opskinsAvgPrice) {
             //TODO
             //double check with: if sold enough on bitskins ( > 10 last week )
               //save ArbitrageOpportunity {from: bitskins, to: opskins} to db then to array
+              let arbitrageOpportunity = {
+                marketHashName: name,
+                itemMarketId: itemsAndStatsMaps.bitskinsItemsMap.get(name).item_id,
+                wearValue: -1,
+                price: bitskinsPrice,
+                fromMarketName: 'bitskins',
+                toMarketName: 'opskins',
+                fromMarketAvgPrice: bitskinsAvgPrice,
+                toMarketAvgPrice: opskinsAvgPrice,
+                potentialPlusValue: opskinsAvgPrice - bitskinsPrice,
+                status: 0,
+                isInUse: false
+              };
+              arbitrageOpportunities
+              .push(arbitrageOpportunity);
           }
+
+          cb();
+
+
         }, (err) => {
           if (err) return reject(err);
           //When done, callback with array 
@@ -111,36 +141,28 @@ module.exports = function(agenda) {
     .then((arbitrageOpportunities) => {
         return new Promise((resolve, reject) => {
           async.eachLimit(arbitrageOpportunities, 5, (arbitrageOpportunity, cb) => {
-            //TODO
-            let arbitrageOpportunityModel = {
-              marketHashName: arbitrageOpportunity.market_hash_name,
-              itemMarketId: arbitrageOpportunity.item_id,
-              wearValue: arbitrageOpportunity.wear_value,
-              // fromMarketId: { type: String, required: true },
-              // toMarketId: { type: String, required: true },
-              // fromMarketPrice: { type: Number, required: true },
-              // toMarketPrice: { type: Number, required: true },
-              // status: { type: Number, required: true },
-              // isInUse: { type: Boolean, required: true },
-              // error: { type: String },
-              // boughtAt: { type: Date },
-              // boughtFor: { type: Number },
-              // soldAt: { type: Date },
-              // soldFor: { type: Number },
-            }
+            
             //save to db
+            ArbitrageOpportunity.findOneAndUpdate(
+              {itemMarketId: arbitrageOpportunity.itemMarketId, isInUse: false, status: 0},
+              arbitrageOpportunity,
+              {upsert: true}
+            )
+            .then(() => cb())
+            .catch(err => cb(err));
+
           }, (err) => {
             if (err) return reject(err);
-            resolve(filteredAvgPrices);
+            resolve(arbitrageOpportunities);
           });
         });
     })
-    .then((filteredAvgPrices) => done(null, filteredAvgPrices))
+    .then((arbitrageOpportunities) => done(null, arbitrageOpportunities))
     .catch(err => done(err));
   });
 
-  
+
   agenda.on('ready', function() {
-    agenda.every('1 minute', jobNames.ArbitrageFinder)
+    agenda.every('2 minutes', jobNames.ArbitrageFinder)
   });
 }

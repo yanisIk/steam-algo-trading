@@ -2,68 +2,115 @@
 const _ = require('lodash');
 const async = require('async');
 const jobNames = require('../jobs.json');
-const ItemStat = require('../models/ItemStat.js');
+const market_hash_names = require('/config/market_hash_names.json');
+const AvgMarketPrice = require('../models/AvgMarketPrice.js');
 const marketsClient = require('../services/marketsClient.js');
 
 module.exports = function(agenda) {
-  agenda.define(jobNames.OpskinsItemStats, function(job, done) {
-    //TODO
-    //Get market_hash_names to track
-    let market_hash_namesPromise;
-    
-    market_hash_namesPromise
-    .then(market_hash_names => {
-      //Get all stats from opskins
-      let opskinsAvgPricesPromise = marketsClient.getAllOpskinsAvgPrices();
-      opskinsAvgPricesPromise
-      //filter only tracked items
-      .then(allAvgPrices => {
+  
+  agenda.define(jobNames.OpskinsAvgMarketPrice, function(job, done) {
+   
+    //1) Get AVG PRICES from opskins
+    let opskinsAvgPricesPromise = marketsClient.getAllOpskinsAvgPrices();
+    opskinsAvgPricesPromise
+    //filter only tracked items
+    .then(allAvgPrices => {
         let filteredAvgPrices = {};
         market_hash_names.forEach(name => {
           filteredAvgPrices[name] = allAvgPrices[name];
         });
         return Promise.resolve(filteredAvgPrices);
-      })
-      //save to DB
-      .then(filteredAvgPrices => {
-        async.eachLimit(filteredAvgPrices.keys(), 5, (item_name, cb) => {
-          //TODO
-          //save to db
-        }, (err) => {
-          if (err) return reject(err);
-          resolve(filteredAvgPrices);
+    })
+    //Create models then save to db
+    .then(filteredAvgPrices => {
+        //Create models
+        let avgMarketPrices = filteredAvgPrices
+        .keys()
+        //extract each date
+        .map((item_name) => {
+          return filteredAvgPrices[item_name].keys().map((date) => {
+            return {  marketHashName: item_name,
+                      marketName: 'opskins',
+                      itemType: 'all',
+                      avgPrice: filteredAvgPrices[item_name][date].price,
+                      timestamp: new Date(date)
+                  }
+          });
+        });
+        avgMarketPrices = _.flatten(avgMarketPrices);
+        
+        //Save to DB
+        return new Promise((resolve, reject) => {
+            async.eachLimit(avgMarketPrices, 5, (avgMarketPrice, cb) => {
+              AvgMarketPrice.findOneAndUpdate(
+                {marketHashName: avgMarketPrice.marketHashName, marketName: avgMarketPrice, timestamp: new Date(date)},
+                avgMarketPrice, 
+                {upsert: true}
+              )
+              .then((item) => {
+                cb();
+              })
+              .catch(err => cb(err))
+
+            }, (err) => {
+              if (err) return reject(err);
+              resolve(avgMarketPrices);
+            });
         });
       })
-      .then((filteredAvgPrices) => done(null, filteredAvgPrices))
+      .then(() => done(null, avgMarketPrices))
       .catch(err => done(err));
-    });
+  
   });
 
-  agenda.define(jobNames.BitskinsItemStats, function(job, done) {
-    //TODO
-    //Get market_hash_names to track
-    let market_hash_namesPromise;
-    
-    market_hash_namesPromise
-    .then(market_hash_names => {
-      return new Promise((resolve, reject) => {
-        //Get all stats from opskins
-        let bitskinsStats = marketsClient.getBitskinsMarketDataByItems(market_hash_names);
-        async.eachLimit(bitskinsStats, 5, (item, cb) => {
-          //TODO
-          //save to db
-        }, (err) => {
-          if (err) return reject(err);
-          resolve(bitskinsStats);
+  agenda.define(jobNames.BitskinsAvgMarketPrice, function(job, done) {
+
+      //Get all stats from opskins
+      let bitskinsStatsPromise = marketsClient.getBitskinsMarketDataByItems(market_hash_names);
+      //Transform the data before saving to db
+      bitskinsStatsPromise.then(stats => {
+        
+        avgMarketPrices = stats.map(stat => {
+          return {
+            marketHashName: stat.market_hash_name,
+            marketName: 'bitskins',
+            itemType: 'all',
+            avgPrice: stat.recent_sales_info.average_price,
+            timestamp: new Date(stat.updated_at)
+          }
+        });
+        return new Promise((resolve, reject) => {
+          //Save to DB
+          async.eachLimit(avgMarketPrices, 5, (avgMarketPrice, cb) => {
+              
+              AvgMarketPrice.findOneAndUpdate(
+                {marketHashName: avgMarketPrice.marketHashName, marketName: avgMarketPrice, timestamp: new Date(date)},
+                avgMarketPrice, 
+                {upsert: true}
+              )
+              .then((item) => {
+                cb();
+              })
+              .catch(err => cb(err))
+
+          }, (err) => {
+            if (err) return reject(err);
+            resolve(bitskinsStats);
+          });
         });
       })
-    })
-    .then((bitskinsStats) => done(null, bitskinsStats))
-    .catch(err => done(err));
-  });
- 
+      .then((bitskinsStats) => done(null, bitskinsStats))
+      .catch(err => done(err));
+  })
+      
+  
   agenda.on('ready', function() {
-    agenda.every('10 minutes', jobNames.BitskinsItemStats)
-    agenda.every('10 minutes', jobNames.OpskinsItemStats);
+    agenda.every('1 hour', jobNames.BitskinsAvgMarketPrice)
+    //Opskins only update their prices every 24h
+    agenda.every('2 hours', jobNames.OpskinsAvgMarketPrice);
+
+    //Run them on startup to init db with data
+    agenda.now(jobNames.BitskinsAvgMarketPrice);
+    agenda.now(jobNames.OpskinsAvgMarketPrice);
   });
 }
