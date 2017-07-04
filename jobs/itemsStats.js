@@ -1,10 +1,13 @@
 'use strict';
 const _ = require('lodash');
 const async = require('async');
-const jobNames = require('../jobs.json');
-const market_hash_names = require('/config/market_hash_names.json');
+const market_hash_names = require('../config/market_hash_names.json');
 const AvgMarketPrice = require('../models/AvgMarketPrice.js');
 const marketsClient = require('../services/marketsClient.js');
+
+const jobNamesArray = process.env.JOBS ? process.env.JOBS.split(',') : [];
+const jobNames = {};
+jobNamesArray.forEach(job => jobNames[job] = job);
 
 module.exports = function(agenda) {
   

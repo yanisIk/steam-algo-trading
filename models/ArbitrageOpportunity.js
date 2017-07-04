@@ -14,8 +14,9 @@ const ArbitrageOpportunitySchema = new Schema({
   price: { type: Number, required: true },
   fromMarketName: { type: String, required: true },
   toMarketName: { type: String, required: true },
-  fromMarkeAvgtPrice: { type: Number, required: true },
+  fromMarketAvgPrice: { type: Number, required: true },
   toMarketAvgPrice: { type: Number, required: true },
+  potentialPlusValue: { type: Number, required: true },
   status: { type: Number, required: true },
   isInUse: { type: Boolean, required: true },
   error: { type: String },
@@ -25,11 +26,6 @@ const ArbitrageOpportunitySchema = new Schema({
   soldFor: { type: Number },
 });
 
-// Return the ride amount for the pilot after collecting 20% platform fees.
-ArbitrageOpportunitySchema.methods.amountForPilot = function() {
-  return parseInt(this.amount * 0.8);
-};
-
-const ArbitrageOpportunity = mongoose.model('ArbitrageOpportunity', ArbitrageOpportunity);
+const ArbitrageOpportunity = mongoose.model('ArbitrageOpportunity', ArbitrageOpportunitySchema);
 
 module.exports = ArbitrageOpportunity;

@@ -1,12 +1,14 @@
 'use strict';
 const _ = require('lodash');
 const async = require('async');
-const jobNames = require('../jobs.json');
-const market_hash_names = require('/config/market_hash_names.json');
+const market_hash_names = require('../config/market_hash_names.json');
 const ArbitrageOpportunity = require('../models/ArbitrageOpportunity');
 const AvgMarketPrice = require('../models/AvgMarketPrice');
 const marketsClient = require('../services/marketsClient');
 
+const jobNamesArray = process.env.JOBS ? process.env.JOBS.split(',') : [];
+const jobNames = {};
+jobNamesArray.forEach(job => jobNames[job] = job);
 
 module.exports = function(agenda) {
 
@@ -17,9 +19,9 @@ module.exports = function(agenda) {
     //get objetcs on sale from bitkins
     let bitskinsItemsPromise = marketsClient.getBitskinsItemsOnSale(market_hash_names);
     
-    Promise.all([opskinsItemsPromise, bitskinsItemsPromise])
+    Promise.all(...[opskinsItemsPromise, bitskinsItemsPromise])
     //create a map of stats for each items from each exchange
-    .then((...opskinsItems, bitskinsItems) => {
+    .then((opskinsItems, bitskinsItems) => {
       return new Promise((resolve, reject) => {        
         
         ////// 1) Transforms items array into map<itemId, cheapestItem>;
@@ -54,8 +56,8 @@ module.exports = function(agenda) {
         async.forEachLimit(unique_market_hash_names, 1, (name, cb) => {
           let opskinsAvgPricesPromise = AvgMarketPrice.findOne({marketHashName: name, marketName: 'opskins'});
           let bitskinsAvgPricesPromise = AvgMarketPrice.findOne({marketHashName: name, marketName: 'bitskins'});
-          Promise.all([opskinsAvgPricesPromise, bitskinsAvgPricesPromise])
-          .then((...opskinsStats, bitskinsStats) => {
+          Promise.all(...[opskinsAvgPricesPromise, bitskinsAvgPricesPromise])
+          .then((opskinsStats, bitskinsStats) => {
             opskinsAvgPricesMap.set(name, opskinsStats);
             bitskinAvgPricesMap.set(name, bitskinsStats);
             cb();

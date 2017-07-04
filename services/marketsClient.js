@@ -1,7 +1,7 @@
 const bluebird = require('bluebird');
 
 const Bitskins = require('bitskins');
-const bitskinsApi = new Bitskins.API(apiKey, bitskinsSecret);
+const bitskinsApi = new Bitskins.API(process.env.BITSKINS_KEY, process.env.BITSKINS_SECRET);
 //const bitskinsSockets = new BitSkins.WebSocket();
 
 const OPSkinsAPI = require('@opskins/api');
