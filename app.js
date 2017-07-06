@@ -13,8 +13,9 @@ const exphbs = require('express-handlebars');
 const sass = require('node-sass-middleware');
 const moment = require('moment');
 const dotenv = require('dotenv');
-const kue = require('kue');
+//const kue = require('kue');
 const basicAuth = require('basic-auth-connect');
+const jobManager = require('./jobManager');
 
 if (!process.env.AWS) {
   dotenv.load({ path: '.env' });
@@ -76,9 +77,9 @@ app.use((req, res, next) => {
 });
 app.locals.moment = moment;
 
-kue.app.set('title', 'Steam Algo Trader');
-app.use(basicAuth('skini', 'skini123'));
-app.use('/kue', kue.app);
+// kue.app.set('title', 'Steam Algo Trader');
+// app.use(basicAuth('skini', 'skini123'));
+// app.use('/kue', kue.app);
 
 
 // // CRUD routes for the pilot signup and dashboard.
