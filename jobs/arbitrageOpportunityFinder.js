@@ -10,10 +10,12 @@ const jobNamesArray = process.env.JOBS ? process.env.JOBS.split(',') : [];
 const jobNames = {};
 jobNamesArray.forEach(job => jobNames[job] = job);
 
-module.exports = function(agenda) {
+module.exports = function(queue) {
 
-  agenda.define(jobNames.ArbitrageFinder, function(job, done) {
+  queue.process(jobNames.ArbitrageFinder, function(job, done) {
     
+    console.log('Starting JOB:', jobNames.ArbitrageFinder);
+
     //get objects on sale from opskins
     let opskinsItemsPromise = marketsClient.getOpskinsSales(market_hash_names);
     //get objetcs on sale from bitkins
@@ -163,7 +165,7 @@ module.exports = function(agenda) {
   });
 
 
-  agenda.on('ready', function() {
-    agenda.every('2 minutes', jobNames.ArbitrageFinder)
+  queue.on('ready', function() {
+    queue.every('2 minutes', jobNames.ArbitrageFinder)
   });
 }

@@ -13,8 +13,8 @@ const exphbs = require('express-handlebars');
 const sass = require('node-sass-middleware');
 const moment = require('moment');
 const dotenv = require('dotenv');
-var Agenda = require('agenda');
-var Agendash = require('agendash');
+const kue = require('kue');
+const basicAuth = require('basic-auth-connect');
 
 if (!process.env.AWS) {
   dotenv.load({ path: '.env' });
@@ -76,12 +76,9 @@ app.use((req, res, next) => {
 });
 app.locals.moment = moment;
 
-const agenda = require('./agenda');
-mongoose.connection.once('open', () => {
-  setTimeout(() => {
-    app.use('/agendash', Agendash(agenda));
-  }, 1000);
-})
+kue.app.set('title', 'Steam Algo Trader');
+app.use(basicAuth('skini', 'skini123'));
+app.use('/kue', kue.app);
 
 
 // // CRUD routes for the pilot signup and dashboard.

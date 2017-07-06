@@ -9,10 +9,12 @@ const jobNamesArray = process.env.JOBS ? process.env.JOBS.split(',') : [];
 const jobNames = {};
 jobNamesArray.forEach(job => jobNames[job] = job);
 
-module.exports = function(agenda) {
+module.exports = function(queue) {
   
-  agenda.define(jobNames.OpskinsAvgMarketPrice, function(job, done) {
+  queue.process(jobNames.OpskinsAvgMarketPrice, function(job, done) {
    
+    console.log('Starting JOB:', jobNames.OpskinsAvgMarketPrice);
+
     //1) Get AVG PRICES from opskins
     let opskinsAvgPricesPromise = marketsClient.getAllOpskinsAvgPrices();
     opskinsAvgPricesPromise
@@ -66,7 +68,9 @@ module.exports = function(agenda) {
   
   });
 
-  agenda.define(jobNames.BitskinsAvgMarketPrice, function(job, done) {
+  queue.process(jobNames.BitskinsAvgMarketPrice, function(job, done) {
+
+      console.log('Starting JOB:', jobNames.BitskinsAvgMarketPrice);
 
       //Get all stats from opskins
       let bitskinsStatsPromise = marketsClient.getBitskinsMarketDataByItems(market_hash_names);

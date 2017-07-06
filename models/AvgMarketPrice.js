@@ -6,7 +6,6 @@ const Schema = mongoose.Schema;
 // Use native promises.
 mongoose.Promise = global.Promise;
 
-// Define the Pilot schema.
 const AvgMarketPriceSchema = new Schema({
   marketHashName: { type: String, required: true, unique: true },
   itemType: { type: String, required: true },

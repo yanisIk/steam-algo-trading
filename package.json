@@ -17,9 +17,8 @@
   },
   "dependencies": {
     "@opskins/api": "^1.4.1",
-    "agenda": "^0.9.1",
-    "agendash": "^0.4.0",
     "async": "^2.4.1",
+    "basic-auth-connect": "^1.0.0",
     "bcrypt": "^1.0.2",
     "bitskins": "^1.0.0",
     "bluebird": "^3.5.0",
@@ -34,6 +33,7 @@
     "express-handlebars": "^3.0.0",
     "express-session": "^1.15.3",
     "express-validator": "^3.2.0",
+    "kue": "^0.11.6",
     "lodash": "^4.17.4",
     "moment": "^2.18.1",
     "mongoose": "^4.11.1",
